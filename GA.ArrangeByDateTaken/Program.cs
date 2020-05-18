@@ -6,63 +6,87 @@ namespace GA.ArrangeByDateTaken
 {
     class Program
     {
+        enum Action
+        {
+            Copy,
+            Move
+        }
+
         static void Main(string[] args)
         {
-
-            string root = @"C:\Users\Andrew Davies\OneDrive\Pictures";
             string oldFolder = args[0];
 
-            Console.WriteLine("Arrange photo's in '{0}' by date taken.", oldFolder);
+            Console.WriteLine($"Arrange photo's in '{oldFolder}' by date taken.");
             Console.WriteLine("Copy (C) or Move (M)?");
+
             var key = Console.ReadKey().KeyChar;
 
-            if (key == 'c' || key == 'C') CopyFiles(root, oldFolder);
-            if (key == 'm' || key == 'M') MoveFiles(root, oldFolder);
+            if (key == 'c' || key == 'C') DoFiles(oldFolder, Action.Copy);
+            if (key == 'm' || key == 'M') DoFiles(oldFolder, Action.Move);
 
             Console.Read();
         }
 
-        private static void CopyFiles(string root, string oldFolder)
+        private static void DoFiles(string oldFolder, Action action)
         {
             foreach (string oldPath in Directory.GetFiles(oldFolder))
             {
-                string newFolder = GetNewFolder(root, oldPath);
+                string newFolder = GetNewFolder(oldPath);
 
-                CopyFile(newFolder, oldPath);
+                switch (action) {
+
+                    case Action.Copy:
+                        CopyFile(newFolder, oldPath);
+                        break;
+
+                    case Action.Move:
+                        MoveFile(newFolder, oldPath);
+                        break;
+                }
 
                 Console.Write(".");
             }
         }
 
-        private static void MoveFiles(string root, string oldFolder)
+        private static string GetNewFolder(string oldPath)
         {
-            foreach (string oldPath in Directory.GetFiles(oldFolder))
+            string root;
+            DateTime dateTaken = DateTime.MinValue;
+
+            string extension = Path.GetExtension(oldPath).ToUpper();
+
+            switch (extension)
             {
-                string newFolder = GetNewFolder(root, oldPath);
+                case ".MP4":
+                    root = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
+                    dateTaken = File.GetCreationTime(oldPath);
+                    break;
 
-                MoveFile(newFolder, oldPath);
-
-                Console.Write(".");
+                default:
+                    root = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                    break;
             }
-        }
-
-        private static string GetNewFolder(string root, string oldPath)
-        {
-            string newFolder;
 
             try
             {
                 FastImage img = new FastImage(oldPath);
 
-                newFolder = String.Format("{0}\\{1:d4}\\{1:d4}-{2:d2}\\{1:d4}-{2:d2}-{3:d2}",
-                    root, img.DateTaken.Year, img.DateTaken.Month, img.DateTaken.Day);
+                dateTaken = img.DateTaken;
             }
             catch
             {
-                newFolder = String.Format("{0}\\No Date", root);
+                // No Date Info use default.
             }
 
-            return newFolder;
+            if (dateTaken == DateTime.MinValue)
+            {
+                return String.Format("{0}\\No Date", root);
+            }
+            else
+            {
+                return String.Format("{0}\\{1:d4}\\{1:d4}-{2:d2}\\{1:d4}-{2:d2}-{3:d2}",
+                        root, dateTaken.Year, dateTaken.Month, dateTaken.Day);
+            }
         }
 
         private static void CopyFile(string newFolder, string oldPath)
