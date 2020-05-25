@@ -62,6 +62,12 @@ namespace GA.ArrangeByDateTaken
                     dateTaken = File.GetCreationTime(oldPath);
                     break;
 
+                case ".THM":
+                case ".LRV":
+                    root = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
+                    dateTaken = File.GetLastWriteTime(oldPath);
+                    break;
+
                 default:
                     root = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
                     break;
